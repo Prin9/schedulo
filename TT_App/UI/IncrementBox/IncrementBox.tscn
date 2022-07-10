@@ -1,0 +1,76 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://UI/IncrementBox/IncrementBox.gd" type="Script" id=1]
+[ext_resource path="res://UI/IncrementBox/Up_Arrow.jpg" type="Texture" id=2]
+[ext_resource path="res://UI/IncrementBox/Down_Arrow.jpg" type="Texture" id=3]
+[ext_resource path="res://UI/IncrementBox/Up_Pressed.jpg" type="Texture" id=4]
+[ext_resource path="res://UI/IncrementBox/Down_Pressed.jpg" type="Texture" id=5]
+
+[node name="ValIncr" type="HBoxContainer"]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+margin_left = -20.0
+margin_right = 20.0
+size_flags_vertical = 3
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Btns" type="VBoxContainer" parent="."]
+margin_right = 30.0
+margin_bottom = 1080.0
+custom_constants/separation = 3
+alignment = 1
+
+[node name="Incr" type="TextureButton" parent="Btns"]
+margin_top = 523.0
+margin_right = 30.0
+margin_bottom = 538.0
+rect_min_size = Vector2( 30, 15 )
+texture_normal = ExtResource( 2 )
+texture_pressed = ExtResource( 4 )
+expand = true
+stretch_mode = 4
+
+[node name="Decr" type="TextureButton" parent="Btns"]
+margin_top = 541.0
+margin_right = 30.0
+margin_bottom = 556.0
+rect_min_size = Vector2( 30, 15 )
+texture_normal = ExtResource( 3 )
+texture_pressed = ExtResource( 5 )
+expand = true
+stretch_mode = 4
+
+[node name="Label" type="Label" parent="."]
+margin_left = 34.0
+margin_right = 84.0
+margin_bottom = 1080.0
+rect_min_size = Vector2( 50, 0 )
+size_flags_vertical = 1
+text = "12"
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ColorRect" type="ColorRect" parent="Label"]
+show_behind_parent = true
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+color = Color( 0.290196, 0.741176, 0.913725, 0.372549 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[connection signal="mouse_entered" from="." to="." method="_on_ValIncr_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_ValIncr_mouse_exited"]
+[connection signal="pressed" from="Btns/Incr" to="." method="_on_Incr_pressed"]
+[connection signal="pressed" from="Btns/Decr" to="." method="_on_Decr_pressed"]
+[connection signal="mouse_entered" from="Label/ColorRect" to="." method="_on_ValIncr_mouse_entered"]
+[connection signal="mouse_exited" from="Label/ColorRect" to="." method="_on_ValIncr_mouse_exited"]

@@ -1,0 +1,119 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://Resources/Fonts/Roboto-Regular.ttf" type="DynamicFontData" id=1]
+[ext_resource path="res://UI/QuickEditPopup/QuickEdit.gd" type="Script" id=2]
+
+[sub_resource type="DynamicFont" id=2]
+size = 25
+font_data = ExtResource( 1 )
+
+[sub_resource type="Theme" id=3]
+default_font = SubResource( 2 )
+
+[sub_resource type="StyleBoxFlat" id=1]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color( 0.0156863, 0.431373, 0.572549, 1 )
+corner_detail = 3
+
+[node name="QuickEdit" type="MarginContainer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+size_flags_vertical = 12
+custom_constants/margin_right = 10
+custom_constants/margin_top = 100
+custom_constants/margin_left = 10
+custom_constants/margin_bottom = 100
+script = ExtResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ColorRect" type="ColorRect" parent="."]
+margin_left = 10.0
+margin_top = 390.0
+margin_right = 710.0
+margin_bottom = 690.0
+rect_min_size = Vector2( 0, 300 )
+size_flags_vertical = 6
+color = Color( 0.0745098, 0.054902, 0.117647, 1 )
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ColorRect"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+custom_constants/separation = 20
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Control3" type="Control" parent="ColorRect/VBoxContainer"]
+margin_right = 700.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Day_Hour" type="Label" parent="ColorRect/VBoxContainer"]
+margin_top = 20.0
+margin_right = 700.0
+margin_bottom = 34.0
+text = "Day 1 | Hour 1"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Subject" type="Label" parent="ColorRect/VBoxContainer"]
+margin_top = 54.0
+margin_right = 700.0
+margin_bottom = 68.0
+text = "Subject"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="MarginContainer" type="MarginContainer" parent="ColorRect/VBoxContainer"]
+margin_top = 88.0
+margin_right = 700.0
+margin_bottom = 119.0
+custom_constants/margin_right = 15
+custom_constants/margin_top = 0
+custom_constants/margin_left = 15
+
+[node name="Subj_Select" type="OptionButton" parent="ColorRect/VBoxContainer/MarginContainer"]
+margin_left = 15.0
+margin_right = 685.0
+margin_bottom = 31.0
+focus_mode = 0
+theme = SubResource( 3 )
+custom_styles/hover = SubResource( 1 )
+custom_styles/pressed = SubResource( 1 )
+custom_styles/focus = SubResource( 1 )
+custom_styles/normal = SubResource( 1 )
+shortcut_in_tooltip = false
+enabled_focus_mode = 0
+text = "Subject"
+clip_text = true
+align = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="ColorRect/VBoxContainer"]
+margin_top = 139.0
+margin_right = 700.0
+margin_bottom = 159.0
+custom_constants/separation = 100
+alignment = 1
+
+[node name="Save" type="Button" parent="ColorRect/VBoxContainer/HBoxContainer"]
+margin_left = 252.0
+margin_right = 293.0
+margin_bottom = 20.0
+text = "Save"
+
+[node name="Cancel" type="Button" parent="ColorRect/VBoxContainer/HBoxContainer"]
+margin_left = 393.0
+margin_right = 447.0
+margin_bottom = 20.0
+text = "Cancel"
+
+[connection signal="pressed" from="ColorRect/VBoxContainer/HBoxContainer/Save" to="." method="_on_Save_pressed"]
+[connection signal="pressed" from="ColorRect/VBoxContainer/HBoxContainer/Cancel" to="." method="_on_Cancel_pressed"]

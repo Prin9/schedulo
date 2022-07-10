@@ -1,0 +1,655 @@
+[gd_scene load_steps=21 format=2]
+
+[ext_resource path="res://Main/Main_Display.gd" type="Script" id=1]
+[ext_resource path="res://btn_1.png" type="Texture" id=2]
+[ext_resource path="res://Resources/Fonts/Roboto-Regular.ttf" type="DynamicFontData" id=3]
+[ext_resource path="res://Main/Schedule_Display.gd" type="Script" id=4]
+[ext_resource path="res://Main/TT_Display.gd" type="Script" id=5]
+[ext_resource path="res://UI/Top_Panel/Top_Panel.tscn" type="PackedScene" id=6]
+[ext_resource path="res://Main/Settings.gd" type="Script" id=7]
+[ext_resource path="res://Main/Dimmer.gd" type="Script" id=8]
+[ext_resource path="res://UI/QuickEditPopup/QuickEdit.tscn" type="PackedScene" id=9]
+[ext_resource path="res://UI/IncrementBox/IncrementBox.tscn" type="PackedScene" id=10]
+[ext_resource path="res://UI/PeriodSlotEdit/PeriodSlotEdit.tscn" type="PackedScene" id=11]
+[ext_resource path="res://Main/Floating_Button.gd" type="Script" id=12]
+[ext_resource path="res://btn_2.png" type="Texture" id=13]
+[ext_resource path="res://btn_3.png" type="Texture" id=14]
+
+[sub_resource type="StyleBoxFlat" id=1]
+content_margin_left = 10.0
+content_margin_right = 10.0
+bg_color = Color( 0.0156863, 0.431373, 0.572549, 1 )
+corner_detail = 3
+
+[sub_resource type="StyleBoxFlat" id=3]
+content_margin_left = 20.0
+content_margin_right = 20.0
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+bg_color = Color( 0.0941176, 0.584314, 0.74902, 0.243137 )
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color( 0, 1, 0.701961, 1 )
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+corner_detail = 3
+
+[sub_resource type="DynamicFont" id=6]
+size = 30
+font_data = ExtResource( 3 )
+
+[sub_resource type="Theme" id=2]
+default_font = SubResource( 6 )
+Button/colors/font_color = Color( 0.88, 0.88, 0.88, 1 )
+Button/colors/font_color_disabled = Color( 0.9, 0.9, 0.9, 0.2 )
+Button/colors/font_color_focus = Color( 0.94, 0.94, 0.94, 1 )
+Button/colors/font_color_hover = Color( 0.94, 0.94, 0.94, 1 )
+Button/colors/font_color_pressed = Color( 1, 1, 1, 1 )
+Button/constants/hseparation = 2
+Button/fonts/font = null
+Button/styles/disabled = null
+Button/styles/focus = SubResource( 1 )
+Button/styles/hover = SubResource( 1 )
+Button/styles/normal = SubResource( 3 )
+Button/styles/pressed = null
+MarginContainer/constants/margin_bottom = 50
+MarginContainer/constants/margin_left = 50
+MarginContainer/constants/margin_right = 50
+MarginContainer/constants/margin_top = 50
+
+[sub_resource type="Shader" id=4]
+code = "shader_type canvas_item;
+
+uniform float screen_width = 1024;
+uniform float screen_height = 600;
+
+// Curvature
+uniform float BarrelPower =1.1;
+// Color bleeding
+uniform float color_bleeding = 1.2;
+uniform float bleeding_range_x = 3;
+uniform float bleeding_range_y = 3;
+// Scanline
+uniform float lines_distance = 4.0;
+uniform float scan_size = 2.0;
+uniform float scanline_alpha = 0.9;
+uniform float lines_velocity = 30.0;
+
+vec2 distort(vec2 p) 
+{
+	float angle = p.y / p.x;
+	float theta = atan(p.y,p.x);
+	float radius = pow(length(p), BarrelPower);
+	
+	p.x = radius * cos(theta);
+	p.y = radius * sin(theta);
+	
+	return 0.5 * (p + vec2(1.0,1.0));
+}
+
+void get_color_bleeding(inout vec4 current_color,inout vec4 color_left){
+	current_color = current_color*vec4(color_bleeding,0.5,1.0-color_bleeding,1);
+	color_left = color_left*vec4(1.0-color_bleeding,0.5,color_bleeding,1);
+}
+
+void get_color_scanline(vec2 uv,inout vec4 c,float time){
+	float line_row = floor((uv.y * screen_height/scan_size) + mod(time*lines_velocity, lines_distance));
+	float n = 1.0 - ceil((mod(line_row,lines_distance)/lines_distance));
+	c = c - n*c*(1.0 - scanline_alpha);
+	c.a = 1.0;
+}
+
+void fragment()
+{
+	vec2 xy = SCREEN_UV * 2.0;
+	xy.x -= 1.0;
+	xy.y -= 1.0;
+	
+	float d = length(xy);
+	if(d < 1.5){
+		xy = distort(xy);
+	}
+	else{
+		xy = SCREEN_UV;
+	}
+	
+	float pixel_size_x = 1.0/screen_width*bleeding_range_x;
+	float pixel_size_y = 1.0/screen_height*bleeding_range_y;
+	vec4 color_left = texture(SCREEN_TEXTURE,xy - vec2(pixel_size_x, pixel_size_y));
+	vec4 current_color = texture(SCREEN_TEXTURE,xy);
+	get_color_bleeding(current_color,color_left);
+	vec4 c = current_color+color_left;
+	get_color_scanline(xy,c,TIME);
+	COLOR = c;
+
+}"
+
+[sub_resource type="ShaderMaterial" id=5]
+resource_local_to_scene = true
+shader = SubResource( 4 )
+shader_param/screen_width = 400.0
+shader_param/screen_height = 600.0
+shader_param/BarrelPower = 1.0
+shader_param/color_bleeding = 1.0
+shader_param/bleeding_range_x = 1.0
+shader_param/bleeding_range_y = 0.0
+shader_param/lines_distance = 2.0
+shader_param/scan_size = 10.0
+shader_param/scanline_alpha = 0.95
+shader_param/lines_velocity = 5.0
+
+[node name="Node2D" type="Control"]
+modulate = Color( 0.47451, 1, 0.290196, 1 )
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -720.0
+margin_bottom = 1080.0
+theme = SubResource( 2 )
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Schedule_Display" type="MarginContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -360.0
+margin_top = -552.5
+margin_right = 360.0
+margin_bottom = 552.5
+custom_constants/margin_right = 0
+script = ExtResource( 4 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ColorRect" type="ColorRect" parent="Schedule_Display"]
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 1055.0
+color = Color( 0.0666667, 0.054902, 0.152941, 1 )
+
+[node name="TT_Display" type="VBoxContainer" parent="Schedule_Display"]
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 1055.0
+rect_clip_content = true
+script = ExtResource( 5 )
+
+[node name="Space" type="Control" parent="Schedule_Display/TT_Display"]
+margin_right = 670.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 0, 50 )
+
+[node name="TopPanel" parent="Schedule_Display/TT_Display" instance=ExtResource( 6 )]
+margin_top = 54.0
+margin_right = 670.0
+margin_bottom = 134.0
+Buttons = [ "Settings" ]
+
+[node name="Space2" type="Control" parent="Schedule_Display/TT_Display"]
+margin_top = 138.0
+margin_right = 670.0
+margin_bottom = 188.0
+rect_min_size = Vector2( 0, 50 )
+
+[node name="TopScroller" type="HBoxContainer" parent="Schedule_Display/TT_Display"]
+margin_top = 192.0
+margin_right = 670.0
+margin_bottom = 262.0
+size_flags_vertical = 0
+custom_constants/separation = 10
+alignment = 1
+
+[node name="Scroll_Day_Left" type="Button" parent="Schedule_Display/TT_Display/TopScroller"]
+margin_right = 100.0
+margin_bottom = 70.0
+rect_min_size = Vector2( 100, 70 )
+focus_mode = 0
+size_flags_vertical = 2
+
+[node name="Label" type="Label" parent="Schedule_Display/TT_Display/TopScroller"]
+margin_left = 110.0
+margin_right = 560.0
+margin_bottom = 36.0
+size_flags_horizontal = 3
+size_flags_vertical = 0
+align = 1
+valign = 1
+autowrap = true
+
+[node name="Scroll_Day_Right" type="Button" parent="Schedule_Display/TT_Display/TopScroller"]
+margin_left = 570.0
+margin_right = 670.0
+margin_bottom = 70.0
+rect_min_size = Vector2( 100, 70 )
+focus_mode = 0
+size_flags_vertical = 2
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Space3" type="Control" parent="Schedule_Display/TT_Display"]
+margin_top = 266.0
+margin_right = 670.0
+margin_bottom = 316.0
+rect_min_size = Vector2( 0, 50 )
+
+[node name="Schedule" type="MarginContainer" parent="Schedule_Display/TT_Display"]
+margin_top = 320.0
+margin_right = 670.0
+margin_bottom = 950.0
+custom_constants/margin_right = 25
+custom_constants/margin_top = 0
+custom_constants/margin_left = 25
+
+[node name="NoSchedule" type="ColorRect" parent="Schedule_Display/TT_Display/Schedule"]
+visible = false
+modulate = Color( 1, 1, 1, 0.490196 )
+margin_left = 25.0
+margin_right = 645.0
+margin_bottom = 580.0
+color = Color( 0.219608, 0.219608, 0.352941, 1 )
+
+[node name="Label" type="Label" parent="Schedule_Display/TT_Display/Schedule/NoSchedule"]
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+margin_top = -18.0
+margin_bottom = 18.0
+text = "- Nothing Scheduled for Today -"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Schedule_Display/TT_Display/Schedule"]
+margin_left = 25.0
+margin_right = 645.0
+margin_bottom = 580.0
+rect_min_size = Vector2( 0, 580 )
+size_flags_horizontal = 5
+scroll_horizontal_enabled = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Schedule_Display/TT_Display/Schedule/ScrollContainer"]
+margin_right = 620.0
+margin_bottom = 580.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_constants/separation = 20
+
+[node name="Settings" type="VBoxContainer" parent="Schedule_Display"]
+visible = false
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 1055.0
+script = ExtResource( 7 )
+
+[node name="Container" type="Control" parent="Schedule_Display/Settings"]
+margin_right = 670.0
+margin_bottom = 50.0
+rect_min_size = Vector2( 0, 50 )
+
+[node name="TopPanel" parent="Schedule_Display/Settings" instance=ExtResource( 6 )]
+visible = false
+margin_top = 54.0
+margin_right = 670.0
+margin_bottom = 134.0
+Buttons = [ "General", "Schedule" ]
+
+[node name="General Settings" type="MarginContainer" parent="Schedule_Display/Settings"]
+margin_top = 138.0
+margin_right = 670.0
+margin_bottom = 1005.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings"]
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 620.0
+margin_bottom = 817.0
+custom_constants/separation = 15
+
+[node name="Top_Text" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer"]
+margin_right = 570.0
+margin_bottom = 36.0
+text = "General Settings ______________"
+uppercase = true
+
+[node name="Control" type="Control" parent="Schedule_Display/Settings/General Settings/VBoxContainer"]
+margin_top = 51.0
+margin_right = 570.0
+margin_bottom = 81.0
+rect_min_size = Vector2( 0, 30 )
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer"]
+margin_top = 96.0
+margin_right = 570.0
+margin_bottom = 696.0
+rect_min_size = Vector2( 0, 600 )
+scroll_horizontal_enabled = false
+
+[node name="SettingContainer" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer"]
+margin_right = 570.0
+margin_bottom = 830.0
+size_flags_horizontal = 3
+custom_constants/separation = 50
+
+[node name="Subjects" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer"]
+margin_right = 558.0
+margin_bottom = 46.0
+rect_min_size = Vector2( 400, 0 )
+size_flags_horizontal = 3
+custom_constants/separation = 10
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Subjects"]
+margin_right = 558.0
+margin_bottom = 36.0
+custom_constants/separation = 50
+alignment = 1
+
+[node name="Label" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Subjects/HBoxContainer"]
+margin_left = 145.0
+margin_right = 278.0
+margin_bottom = 36.0
+text = "Subjects :"
+
+[node name="SubjectCount" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Subjects/HBoxContainer" instance=ExtResource( 10 )]
+anchor_left = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 328.0
+margin_right = 412.0
+margin_bottom = 36.0
+_upper_imit = 100
+
+[node name="SubjectInputs" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Subjects"]
+modulate = Color( 0, 1, 1, 1 )
+margin_top = 46.0
+margin_right = 558.0
+margin_bottom = 46.0
+
+[node name="Label" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer"]
+margin_left = 76.0
+margin_top = 96.0
+margin_right = 482.0
+margin_bottom = 132.0
+size_flags_horizontal = 4
+text = "_____________________________"
+align = 1
+
+[node name="Hours" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer"]
+margin_top = 182.0
+margin_right = 558.0
+margin_bottom = 238.0
+custom_constants/separation = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Hours"]
+margin_right = 558.0
+margin_bottom = 36.0
+custom_constants/separation = 50
+alignment = 1
+
+[node name="Label" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Hours/HBoxContainer"]
+margin_left = 149.0
+margin_right = 275.0
+margin_bottom = 36.0
+text = "Periods : "
+
+[node name="HourCount" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Hours/HBoxContainer" instance=ExtResource( 10 )]
+anchor_left = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 325.0
+margin_right = 409.0
+margin_bottom = 36.0
+_upper_imit = 100
+
+[node name="PeriodList" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Hours"]
+modulate = Color( 0, 1, 1, 1 )
+margin_top = 56.0
+margin_right = 558.0
+margin_bottom = 56.0
+
+[node name="Label2" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer"]
+margin_top = 288.0
+margin_right = 558.0
+margin_bottom = 324.0
+size_flags_horizontal = 3
+text = "_____________________________"
+align = 1
+
+[node name="Days" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer"]
+margin_top = 374.0
+margin_right = 558.0
+margin_bottom = 830.0
+
+[node name="Label" type="Label" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days"]
+margin_right = 558.0
+margin_bottom = 36.0
+text = "Marked Workdays"
+align = 1
+
+[node name="Days_Toggle" type="VBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days"]
+modulate = Color( 0, 1, 1, 1 )
+margin_top = 40.0
+margin_right = 558.0
+margin_bottom = 456.0
+
+[node name="Sunday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 360.0
+margin_right = 558.0
+margin_bottom = 416.0
+text = "Sunday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Monday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_right = 558.0
+margin_bottom = 56.0
+text = "Monday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Tuesday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 60.0
+margin_right = 558.0
+margin_bottom = 116.0
+text = "Tuesday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Wednesday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 120.0
+margin_right = 558.0
+margin_bottom = 176.0
+text = "Wednesday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Thursday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 180.0
+margin_right = 558.0
+margin_bottom = 236.0
+text = "Thursday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Friday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 240.0
+margin_right = 558.0
+margin_bottom = 296.0
+focus_mode = 0
+enabled_focus_mode = 0
+text = "Friday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Saturday" type="CheckButton" parent="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle"]
+margin_top = 300.0
+margin_right = 558.0
+margin_bottom = 356.0
+text = "Saturday"
+flat = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Schedule_Display/Settings/General Settings/VBoxContainer"]
+margin_top = 711.0
+margin_right = 570.0
+margin_bottom = 767.0
+custom_constants/separation = 100
+alignment = 1
+
+[node name="General_Save" type="Button" parent="Schedule_Display/Settings/General Settings/VBoxContainer/HBoxContainer"]
+margin_left = 137.0
+margin_right = 243.0
+margin_bottom = 56.0
+focus_mode = 0
+enabled_focus_mode = 0
+text = "Save"
+
+[node name="General_Cancel" type="Button" parent="Schedule_Display/Settings/General Settings/VBoxContainer/HBoxContainer"]
+margin_left = 343.0
+margin_right = 433.0
+margin_bottom = 56.0
+focus_mode = 0
+enabled_focus_mode = 0
+text = "Exit"
+
+[node name="Dimmer" type="ColorRect" parent="Schedule_Display"]
+visible = false
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 1055.0
+color = Color( 0, 0, 0, 0.678431 )
+script = ExtResource( 8 )
+
+[node name="QuickEdit" parent="Schedule_Display/Dimmer" instance=ExtResource( 9 )]
+visible = false
+
+[node name="PeriodSlotEdit" parent="Schedule_Display/Dimmer" instance=ExtResource( 11 )]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = -302.5
+margin_top = -130.5
+margin_right = 302.5
+margin_bottom = 130.5
+
+[node name="Shader" type="ColorRect" parent="Schedule_Display"]
+material = SubResource( 5 )
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 1055.0
+mouse_filter = 2
+
+[node name="BtnBox" type="HBoxContainer" parent="Schedule_Display"]
+margin_left = 50.0
+margin_top = 50.0
+margin_right = 720.0
+margin_bottom = 114.0
+size_flags_vertical = 0
+alignment = 2
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="THIS" type="TextureButton" parent="Schedule_Display/BtnBox"]
+margin_left = 606.0
+margin_right = 670.0
+margin_bottom = 64.0
+rect_pivot_offset = Vector2( 32, 32 )
+focus_mode = 0
+toggle_mode = true
+pressed = true
+enabled_focus_mode = 0
+texture_normal = ExtResource( 14 )
+texture_pressed = ExtResource( 2 )
+
+[node name="FloatingButton" type="Position2D" parent="."]
+visible = false
+position = Vector2( 686, 106 )
+script = ExtResource( 12 )
+
+[node name="Pos" type="Position2D" parent="FloatingButton"]
+
+[node name="ToggleButton" type="TextureButton" parent="FloatingButton/Pos"]
+margin_right = 64.0
+margin_bottom = 64.0
+toggle_mode = true
+texture_normal = ExtResource( 13 )
+texture_pressed = ExtResource( 2 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Tween" type="Tween" parent="FloatingButton/Pos"]
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="GlitchTimer" type="Timer" parent="."]
+wait_time = 0.1
+one_shot = true
+autostart = true
+
+[node name="TimeCheck" type="Timer" parent="."]
+wait_time = 60.0
+autostart = true
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+visible = false
+polygon = PoolVector2Array( 50, 50, 670, 50, 670, 18, 702, 18, 0, 0 )
+
+[node name="Tween" type="Tween" parent="."]
+
+[connection signal="pressed" from="Schedule_Display/TT_Display/TopScroller/Scroll_Day_Left" to="Schedule_Display/TT_Display" method="_on_Scroll_Day_Left_pressed"]
+[connection signal="pressed" from="Schedule_Display/TT_Display/TopScroller/Scroll_Day_Right" to="Schedule_Display/TT_Display" method="_on_Scroll_Day_Right_pressed"]
+[connection signal="value_changed" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Subjects/HBoxContainer/SubjectCount" to="Schedule_Display/Settings" method="_on_SubjectCount_value_changed"]
+[connection signal="value_changed" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Hours/HBoxContainer/HourCount" to="Schedule_Display/Settings" method="_on_HourCount_value_changed"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Sunday" to="Schedule_Display/Settings" method="_on_Sunday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Monday" to="Schedule_Display/Settings" method="_on_Monday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Tuesday" to="Schedule_Display/Settings" method="_on_Tuesday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Wednesday" to="Schedule_Display/Settings" method="_on_Wednesday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Thursday" to="Schedule_Display/Settings" method="_on_Thursday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Friday" to="Schedule_Display/Settings" method="_on_Friday_toggled"]
+[connection signal="toggled" from="Schedule_Display/Settings/General Settings/VBoxContainer/ScrollContainer/SettingContainer/Days/Days_Toggle/Saturday" to="Schedule_Display/Settings" method="_on_Saturday_toggled"]
+[connection signal="pressed" from="Schedule_Display/Settings/General Settings/VBoxContainer/HBoxContainer/General_Save" to="Schedule_Display/Settings" method="_on_General_Save_pressed"]
+[connection signal="pressed" from="Schedule_Display/Settings/General Settings/VBoxContainer/HBoxContainer/General_Cancel" to="Schedule_Display/Settings" method="_on_General_Cancel_pressed"]
+[connection signal="changePrdSlot" from="Schedule_Display/Dimmer/PeriodSlotEdit" to="Schedule_Display/Settings" method="_on_PeriodSlotEdit_changePrdSlot"]
+[connection signal="toggled" from="Schedule_Display/BtnBox/THIS" to="." method="_on_THIS_toggled"]
+[connection signal="pressed" from="FloatingButton/Pos/ToggleButton" to="FloatingButton" method="_on_ToggleButton_pressed"]
+[connection signal="tween_completed" from="FloatingButton/Pos/Tween" to="FloatingButton" method="_on_Tween_tween_completed"]
+[connection signal="timeout" from="Timer" to="." method="_on_Timer_timeout"]
+[connection signal="timeout" from="GlitchTimer" to="." method="_on_GlitchTimer_timeout"]
+[connection signal="timeout" from="TimeCheck" to="." method="_on_TimeCheck_timeout"]
