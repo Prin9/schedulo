@@ -2,7 +2,6 @@
 Stylized scheduling application for quick access to periodic planning, all available on your desktop
 
 ![Closed_2png](https://user-images.githubusercontent.com/88686481/178146116-91c7ed69-22fe-4a0d-af7e-6ee240610f36.png)
-
 ![Open_2](https://user-images.githubusercontent.com/88686481/178146100-38e43d75-b927-4859-acf9-26f4a7a45286.png)
 
 
@@ -23,10 +22,10 @@ https://user-images.githubusercontent.com/88686481/178146147-7547a078-3964-4732-
 
 # Scope in-development
 
--> Add-on reminders to period slots
--> Flexible scroll-through for all day orders
--> Corrective weekly sync optionality
+Add-on reminders to period slots | Flexible scroll-through for all day orders | Corrective weekly sync optionality
 
 Note - This is a project in-progress and is, hence, not provided as a compiled application. However, users are free to export it for themselves via Godot
 
 Platform - PC | Android [Tentative]
+
+For any queries or discussion, mail to sbsenin@proton.me
