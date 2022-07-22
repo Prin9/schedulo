@@ -10,7 +10,6 @@ var hourlyButton=preload("res://UI/ScheduleSlot/ScheduleSlotButton.tscn")
 
 func _ready():
 	var date=OS.get_datetime()
-	print(date)
 
 	topDayText.text = "Day Order - " + Globals.current_day.split('_')[1] + "\n" + str(date["day"]) + " - " + str(date["month"]) + " - " + str(date["year"]) + "\n" + "---- " + Globals.dayDict[int(Globals.current_day.split('_')[1])] +" ----"
 	render("Schedule")

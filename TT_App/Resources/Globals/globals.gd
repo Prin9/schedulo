@@ -14,7 +14,6 @@ var g_dict = {
 }
 
 var dict={
-	"weekly":0,
 	"hours":0,
 	"startStamps":0,
 	"subjectCount":0,
